@@ -1,0 +1,343 @@
+html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Payment - MiminCihayy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #e31e24; /* Merah QRIS */
+            --wa-green: #25d366;
+            --dark: #1a1a1a;
+            --bg: #f4f6f8;
+            --card: #ffffff;
+            --text: #2d3436;
+            --border: #dfe6e9;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+            min-height: 650px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- COMMON STYLES --- */
+        .page {
+            padding: 30px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.4s ease;
+        }
+        .page.active { display: flex; }
+
+        h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 5px; text-align: center; }
+        p.sub { font-size: 0.9rem; color: #636e72; text-align: center; margin-bottom: 25px; line-height: 1.5; }
+
+        .btn-primary {
+            margin-top: auto;
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 8px 15px rgba(227, 30, 36, 0.2);
+        }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-primary:disabled { background: #b2bec3; cursor: not-allowed; transform: none; }
+
+        .btn-wa {
+            background: var(--wa-green);
+            box-shadow: 0 8px 15px rgba(37, 211, 102, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .btn-wa:hover { background: #20bd5a; }
+
+        /* --- PAGE 1: INPUT NOMINAL --- */
+        .input-group { position: relative; margin-bottom: 20px; }
+        .currency-symbol {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            font-size: 1.2rem; font-weight: 700; color: var(--text);
+        }
+        .input-amount {
+            width: 100%; padding: 18px 20px 18px 55px;
+            font-size: 1.5rem; font-weight: 700; border: 2px solid var(--border);
+            border-radius: 14px; outline: none; transition: 0.3s; color: var(--primary);
+        }
+        .input-amount:focus { border-color: var(--primary); }
+
+        .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .btn-quick {
+            padding: 12px; background: #f1f2f6; border: none; border-radius: 10px;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .btn-quick:active { transform: scale(0.95); background: #dfe6e9; }
+
+        /* --- PAGE 2: QR CODE --- */
+        .qr-display-amount { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 5px; }
+        .qr-container {
+            background: white; padding: 15px; border-radius: 16px;
+            border: 2px dashed var(--border); margin: 20px auto;
+            display: flex; justify-content: center;
+        }
+        .qr-img { width: 220px; height: 220px; object-fit: contain; }
+        .timer-box {
+            text-align: center; padding: 12px; background: #fff0f0;
+            border-radius: 10px; color: var(--primary); font-weight: 700; margin-bottom: 20px;
+        }
+
+        /* --- PAGE 3: UPLOAD BUKTI --- */
+        .upload-area {
+            border: 2px dashed var(--border); border-radius: 16px;
+            padding: 40px 20px; text-align: center; cursor: pointer;
+            transition: 0.3s; background: #fafafa; margin-bottom: 20px;
+        }
+        .upload-area:hover { border-color: var(--primary); background: #fff5f5; }
+        .upload-icon { font-size: 3rem; margin-bottom: 10px; display: block; color: #b2bec3; }
+        .upload-text { font-weight: 600; color: var(--text); }
+        .upload-sub { font-size: 0.8rem; color: #636e72; margin-top: 5px; }
+        
+        #fileInput { display: none; }
+        .preview-container { 
+            display: none; margin-bottom: 20px; text-align: center; 
+        }
+        .preview-img { 
+            max-width: 100%; max-height: 200px; border-radius: 10px; 
+            border: 1px solid var(--border); 
+        }
+
+        /* --- PAGE 4: SELESAI --- */
+        .success-icon {
+            width: 80px; height: 80px; background: #e6fffa; color: var(--wa-green);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; margin: 20px auto;
+        }
+        .order-id { 
+            background: #f1f2f6; padding: 10px; border-radius: 8px; 
+            font-family: monospace; font-size: 0.9rem; text-align: center; margin-bottom: 20px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 480px) {
+            body { padding: 0; background: white; }
+            .container { border-radius: 0; max-width: 100%; min-height: 100vh; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- HALAMAN 1: INPUT NOMINAL -->
+    <div id="page1" class="page active">
+        <h1>Masukkan Nominal</h1>
+        <p class="sub">Silakan input jumlah transfer sesuai tagihan atau keinginan Anda.</p>
+
+        <div class="input-group">
+            <span class="currency-symbol">Rp</span>
+            <input type="text" id="amountInput" class="input-amount" placeholder="0" inputmode="numeric">
+        </div>
+
+        <div class="quick-grid">
+            <button class="btn-quick" onclick="setAmount(10000)">10rb</button>
+            <button class="btn-quick" onclick="setAmount(20000)">20rb</button>
+            <button class="btn-quick" onclick="setAmount(50000)">50rb</button>
+            <button class="btn-quick" onclick="setAmount(100000)">100rb</button>
+            <button class="btn-quick" onclick="setAmount(200000)">200rb</button>
+            <button class="btn-quick" onclick="setAmount(500000)">500rb</button>
+        </div>
+
+        <button id="btnToQr" class="btn-primary" onclick="goToPage('page2')" disabled>Lanjut Pembayaran</button>
+    </div>
+
+    <!-- HALAMAN 2: QR CODE -->
+    <div id="page2" class="page">
+        <div class="timer-box">Selesaikan dalam <span id="countdown">15:00</span></div>
+        
+        <div class="qr-display-amount" id="displayAmount">Rp 0</div>
+        <p class="sub">Scan QRIS di bawah menggunakan aplikasi E-Wallet atau M-Banking Anda.<br><strong>Pastikan nominal input manual sama persis!</strong></p>
+
+        <div class="qr-container">
+            <!-- GANTI SRC DI BAWAH INI DENGAN LINK GAMBAR QRIS ANDA -->
+            <img src="https://files.catbox.moe/7369vf.jpg" 
+                 alt="QRIS MiminCihayy Store" 
+                 class="qr-img" 
+                 id="qrisImage">
+        </div>
+
+        <p style="text-align:center; font-size:0.8rem; color:#636e72; margin-bottom:20px;">
+            Merchant: MiminCihayy Store<br>NMID: ID1025407388095
+        </p>
+
+        <button class="btn-primary" onclick="goToPage('page3')">Sudah Bayar? Upload Bukti</button>
+        <button style="margin-top:10px; background:transparent; border:none; color:#636e72; cursor:pointer;" onclick="goToPage('page1')">Kembali Edit Nominal</button>
+    </div>
+
+    <!-- HALAMAN 3: UPLOAD BUKTI -->
+    <div id="page3" class="page">
+        <h1>Konfirmasi Pembayaran</h1>
+        <p class="sub">Unggah screenshot bukti transfer Anda untuk verifikasi admin.</p>
+
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()" id="uploadBox">
+            <span class="upload-icon">📁</span>
+            <div class="upload-text">Ketuk untuk Upload Gambar</div>
+            <div class="upload-sub">Format: JPG, PNG (Max 2MB)</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(this)">
+
+        <div class="preview-container" id="previewContainer">
+            <img src="" alt="Preview" class="preview-img" id="previewImg">
+            <p style="font-size:0.8rem; color:var(--wa-green); margin-top:5px;">✅ Gambar terpilih</p>
+        </div>
+
+        <button id="btnFinish" class="btn-primary" onclick="goToPage('page4')" disabled>Kirim & Selesai</button>
+        <button style="margin-top:10px; background:transparent; border:none; color:#636e72; cursor:pointer;" onclick="goToPage('page2')">Kembali ke QR</button>
+    </div>
+
+    <!-- HALAMAN 4: SELESAI & WHATSAPP -->
+    <div id="page4" class="page" style="text-align:center; justify-content:center;">
+        <div class="success-icon">✓</div>
+        <h1>Pembayaran Terkirim!</h1>
+        <p class="sub">Terima kasih. Pesanan Anda sedang diproses oleh admin setelah bukti diverifikasi.</p>
+
+        <div class="order-id">ID: #INV-<span id="randomId"></span></div>
+
+        <p style="font-size:0.9rem; margin-bottom:15px; color:#636e72;">
+            Silakan chat WhatsApp di bawah untuk konfirmasi cepat:
+        </p>
+
+        <a href="https://wa.me/6283863242851?text=Halo%20Admin%20MiminCihayy%2C%20saya%20sudah%20melakukan%20pembayaran.%20Mohon%20dicek." 
+           target="_blank" 
+           class="btn-primary btn-wa">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+            Chat WhatsApp Admin
+        </a>
+        
+        <button style="margin-top:15px; background:transparent; border:none; color:#636e72; cursor:pointer;" onclick="location.reload()">Buat Transaksi Baru</button>
+    </div>
+
+</div>
+
+<script>
+    // --- VARIABEL GLOBAL ---
+    let rawAmount = 0;
+    let timerInterval;
+    const waNumber = "6283863242851";
+
+    // --- FORMAT RUPIAH ---
+    document.getElementById('amountInput').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value === '') { rawAmount = 0; e.target.value = ''; document.getElementById('btnToQr').disabled = true; return; }
+        rawAmount = parseInt(value);
+        e.target.value = new Intl.NumberFormat('id-ID').format(rawAmount);
+        document.getElementById('btnToQr').disabled = false;
+    });
+
+    function setAmount(num) {
+        rawAmount = num;
+        document.getElementById('amountInput').value = new Intl.NumberFormat('id-ID').format(num);
+        document.getElementById('btnToQr').disabled = false;
+    }
+
+    // --- NAVIGASI HALAMAN ---
+    function goToPage(pageId) {
+        // Validasi khusus Page 1 -> 2
+        if (pageId === 'page2' && rawAmount < 1000) { alert("Minimal Rp 1.000"); return; }
+        
+        // Sembunyikan semua page
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        // Tampilkan target page
+        document.getElementById(pageId).classList.add('active');
+
+        // Logika khusus per halaman
+        if (pageId === 'page2') {
+            document.getElementById('displayAmount').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(rawAmount);
+            startTimer(15 * 60);
+            // Update link WA dengan nominal
+            updateWaLink();
+        } else if (pageId === 'page4') {
+            clearInterval(timerInterval);
+            document.getElementById('randomId').innerText = Math.floor(Math.random() * 900000) + 100000;
+        } else {
+            clearInterval(timerInterval);
+        }
+    }
+
+    // --- TIMER ---
+    function startTimer(duration) {
+        let timer = duration;
+        clearInterval(timerInterval);
+        timerInterval = setInterval(function () {
+            let m = parseInt(timer / 60, 10);
+            let s = parseInt(timer % 60, 10);
+            m = m < 10 ? "0" + m : m;
+            s = s < 10 ? "0" + s : s;
+            document.getElementById('countdown').textContent = m + ":" + s;
+            if (--timer < 0) {
+                clearInterval(timerInterval);
+                document.getElementById('countdown').textContent = "EXPIRED";
+                alert("Waktu habis!");
+            }
+        }, 1000);
+    }
+
+    // --- UPLOAD FILE SIMULASI ---
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+                document.getElementById('uploadBox').style.display = 'none';
+                document.getElementById('btnFinish').disabled = false;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // --- UPDATE LINK WHATSAPP DINAMIS ---
+    function updateWaLink() {
+        const formattedAmt = new Intl.NumberFormat('id-ID').format(rawAmount);
+        const text = `Halo Admin MiminCihayy, saya sudah melakukan pembayaran sebesar *Rp ${formattedAmt}*. Mohon dicek mutasinya. Terima kasih.`;
+        const encodedText = encodeURIComponent(text);
+        document.querySelector('.btn-wa').href = `https://wa.me/${waNumber}?text=${encodedText}`;
+    }
+
+    // --- CARA MEMASANG GAMBAR QRIS ASLI ---
+    // 1. Upload gambar QRIS Anda ke Imgur/Cloudinary
+    // 2. Copy direct link (.jpg/.png)
+    // 3. Ganti src pada tag <img id="qrisImage"> di atas
+</script>
+
+</body>
+</html>
+
